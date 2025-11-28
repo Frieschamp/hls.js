@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>afternight.tv Player</title>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+    body {
+        background: #000;
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+
+    #player-container {
+        position: relative;
+        width: 100%;
+        max-width: 900px;
+        margin: 40px auto;
+    }
+
+    video {
+        width: 100%;
+        border-radius: 8px;
+        background: #000;
+    }
+
+    /* MENU BOX */
+    .menu-box {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(0,0,0,0.85);
+        padding: 15px;
+        border-radius: 8px;
+        color: white;
+        font-size: 15px;
+        width: 180px;
+        display: none;
+        z-index: 9999;
+    }
+
+    .menu-item {
+        padding: 8px 0;
+        cursor: pointer;
+    }
+    .menu-item:hover {
+        background: rgba(255,255,255,0.1);
+    }
+
+    /* TOP BUTTON */
+    #settings-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        color: white;
+        background: rgba(0,0,0,0.7);
+        padding: 10px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        z-index: 9999;
+    }
+
+</style>
+</head>
+<body>
+
+<div id="player-container">
+
+    <!-- SETTINGS BUTTON -->
+    <div id="settings-btn">⚙️</div>
+
+    <!-- MENUS -->
+    <div id="quality-menu" class="menu-box"></div>
+    <div id="speed-menu" class="menu-box"></div>
+    <div id="caption-menu" class="menu-box"></div>
+
+    <!-- VIDEO PLAYER -->
+    <video id="video" controls playsinline webkit-playsinline></video>
+
+</div>
+
+<script>
+const video = document.getElementById("video");
+const settingsBtn = document.getElementById("settings-btn");
+
+const qualityMenu = document.getElementById("quality-menu");
+const speedMenu = document.getElementById("speed-menu");
+const captionMenu = document.getElementById("caption-menu");
+
+// -----------------------------
+// 1. LOAD HLS STREAM
+// -----------------------------
+const hls = new Hls();
+hls.loadSource("YOUR_MASTER_PLAYLIST.m3u8");
+hls.attachMedia(video);
+
+// -----------------------------
+// 2. BUILD QUALITY MENU
+// -----------------------------
+hls.on(Hls.Events.MANIFEST_PARSED, function () {
+    const levels = hls.levels;
+
+    qualityMenu.innerHTML = "<b>Quality</b><br><br>";
+
+    levels.forEach((level, i) => {
+        const item = document.createElement("div");
+        item.className = "menu-item";
+        item.innerText = `${level.height}p`;
+
+        item.onclick = () => {
+            hls.currentLevel = i;  // SET QUALITY
+            hideMenus();
+        };
+
+        qualityMenu.appendChild(item);
+    });
+
+    // AUTO QUALITY
+    const auto = document.createElement("div");
+    auto.className = "menu-item";
+    auto.innerText = "Auto";
+    auto.onclick = () => {
+        hls.currentLevel = -1;
+        hideMenus();
+    };
+    qualityMenu.appendChild(auto);
+});
+
+// -----------------------------
+// 3. BUILD SPEED MENU
+// -----------------------------
+const speeds = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+
+speedMenu.innerHTML = "<b>Speed</b><br><br>";
+
+speeds.forEach(speed => {
+    const item = document.createElement("div");
+    item.className = "menu-item";
+    item.innerText = speed + "x";
+
+    item.onclick = () => {
+        video.playbackRate = speed;
+        hideMenus();
+    };
+
+    speedMenu.appendChild(item);
+});
+
+// -----------------------------
+// 4. CAPTIONS MENU
+// -----------------------------
+captionMenu.innerHTML = "<b>Captions</b><br><br>";
+
+const captionOn = document.createElement("div");
+captionOn.className = "menu-item";
+captionOn.innerText = "Enable Captions";
+captionOn.onclick = () => {
+    let tracks = video.textTracks;
+    if (tracks.length > 0) tracks[0].mode = "showing";
+    hideMenus();
+};
+
+const captionOff = document.createElement("div");
+captionOff.className = "menu-item";
+captionOff.innerText = "Disable Captions";
+captionOff.onclick = () => {
+    let tracks = video.textTracks;
+    if (tracks.length > 0) tracks[0].mode = "disabled";
+    hideMenus();
+};
+
+captionMenu.append(captionOn, captionOff);
+
+// -----------------------------
+// 5. SETTINGS BUTTON LOGIC
+// -----------------------------
+settingsBtn.onclick = () => {
+    hideMenus();
+    qualityMenu.style.display = "block";
+    speedMenu.style.display = "block";
+    captionMenu.style.display = "block";
+
+    // Position stacked menus
+    qualityMenu.style.top = "60px";
+    qualityMenu.style.right = "20px";
+
+    speedMenu.style.top = "60px";
+    speedMenu.style.right = "210px";
+
+    captionMenu.style.top = "60px";
+    captionMenu.style.right = "400px";
+};
+
+function hideMenus() {
+    qualityMenu.style.display = "none";
+    speedMenu.style.display = "none";
+    captionMenu.style.display = "none";
+}
+
+// Hide menus if clicking outside
+document.addEventListener("click", function(e) {
+    if (!e.target.closest("#settings-btn") && !e.target.closest(".menu-box")) {
+        hideMenus();
+    }
+});
+</script>
+
+</body>
+</html>
